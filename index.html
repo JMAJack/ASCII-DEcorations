@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tropical Bloom</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #0a0a0c;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #app-container {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            max-width: 1280px;
+            max-height: 720px;
+        }
+        #canvas-container {
+            flex: 1;
+            position: relative;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: #0a0a0c;
+        }
+        #panel {
+            width: 400px;
+            background: #0a0a0c;
+            border-left: 1px solid #3c3c46;
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        h1 { font-size: 20px; color: #ffd700; margin: 0 0 5px 0; }
+        .sub { font-size: 12px; color: #b4b4b4; margin-bottom: 15px; }
+        .divider { height: 1px; background: #3c3c46; margin-bottom: 15px; }
+        .notes { font-size: 11px; color: #aaaaaa; line-height: 1.4; }
+        .notes b { color: #ffffff; }
+        .footer { font-size: 11px; color: #787882; }
+        
+        /* Mobile adjustments */
+        @media (max-width: 900px) {
+            #app-container { flex-direction: column; }
+            #panel { width: 100%; height: 250px; border-left: none; border-top: 1px solid #3c3c46; padding: 10px; }
+            .notes { font-size: 10px; line-height: 1.2; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <div id="canvas-container">
+        <canvas id="asciiCanvas"></canvas>
+    </div>
+    <div id="panel">
+        <div>
+            <h1>TROPICAL BLOOM</h1>
+            <div class="sub">Hibiscus · ASCII Code Art — JIN2, 2026</div>
+            <div class="divider"></div>
+            <div class="notes">
+                <b>Artist's Note</b><br>
+                A single line of light grows into a stem, a broad trumpet bud forms, and then, a stunning canopy of letters unfurls, outer petals first. A fleeting tropical memory made eternal — drawn only with letters, numbers and symbols.<br><br>
+                <b>Technology</b><br>
+                HTML5 Canvas · JavaScript · True-Color ASCII<br><br>
+                <b>Creative Process</b><br>
+                1. Form - structural isolation of the hibiscus.<br>
+                2. Growth - progressive radial expansion from stem base.<br>
+                3. Shading - true-color sampling with uvula highlights.<br>
+                4. Motion - continuous organic sway at full bloom.
+            </div>
+        </div>
+        <div class="footer" id="statusText">Initializing...</div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('asciiCanvas');
+const ctx = canvas.getContext('2d');
+const statusText = document.getElementById('statusText');
+
+const ASCII_RAMP = " .'`^\",:;Il!i~+_-?][}{1)(|/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
+const FONT_SIZE = 11;
+const CHAR_WIDTH = 7;
+const CHAR_HEIGHT = 13;
+
+let img = new Image();
+let imgLoaded = false;
+let baseLum, baseColorData, gridCols, gridRows;
+
+img.src = 'hibiscus_flower_tz clean cut.png'; // Make sure this image is in the same folder
+
+img.onload = () => {
+    imgLoaded = true;
+    initGrid();
+};
+
+function initGrid() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+
+    gridCols = Math.floor(canvas.width / CHAR_WIDTH);
+    gridRows = Math.floor(canvas.height / CHAR_HEIGHT);
+
+    // Offscreen canvas to sample image pixels
+    const offCanvas = document.createElement('canvas');
+    offCanvas.width = gridCols;
+    offCanvas.height = gridRows;
+    const offCtx = offCanvas.getContext('2d');
+    offCtx.drawImage(img, 0, 0, gridCols, gridRows);
+    
+    const imgData = offCtx.getImageData(0, 0, gridCols, gridRows).data;
+
+    baseLum = new Float32Array(gridCols * gridRows);
+    baseColorData = new Uint8Array(gridCols * gridRows * 3);
+
+    for (let y = 0; y < gridRows; y++) {
+        for (let x = 0; x < gridCols; x++) {
+            const idx = (y * gridCols + x);
+            const r = imgData[idx * 4];
+            const g = imgData[idx * 4 + 1];
+            const b = imgData[idx * 4 + 2];
+
+            baseLum[idx] = (0.299 * r + 0.587 * g + 0.114 * b) / 255.0;
+            baseColorData[idx * 3] = r;
+            baseColorData[idx * 3 + 1] = g;
+            baseColorData[idx * 3 + 2] = b;
+        }
+    }
+}
+
+let frameCount = 0;
+const cycleFrames = 360;
+const growthFrames = 180;
+
+function animate() {
+    frameCount++;
+    ctx.fillStyle = "#0a0a0c";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    if (imgLoaded) {
+        const cycleFrame = frameCount % cycleFrames;
+        let growthProgress = 1.0;
+        if (cycleFrame < growthFrames) {
+            let t = cycleFrame / growthFrames;
+            growthProgress = t * t * (3.0 - 2.0 * t); // Ease in out
+        }
+
+        const anchorX = Math.floor(gridCols / 2);
+        const anchorY = Math.floor(gridRows * 0.75);
+        const maxDist = Math.sqrt(gridCols*gridCols + gridRows*gridRows);
+        const currentMaxRadius = maxDist * growthProgress;
+
+        ctx.font = `bold ${FONT_SIZE}px 'Courier New', monospace`;
+        ctx.textBaseline = 'top';
+
+        for (let y = 0; y < gridRows; y++) {
+            for (let x = 0; x < gridCols; x++) {
+                const dist = Math.sqrt((x - anchorX)**2 + (y - anchorY)**2);
+                if (dist > currentMaxRadius) continue;
+
+                const idx = y * gridCols + x;
+                const lum = baseLum[idx];
+                if (lum < 0.02) continue; // skip transparent/black background
+
+                // Wave effect at full bloom
+                let waveOffset = 0;
+                if (growthProgress >= 1.0) {
+                    waveOffset = Math.sin(frameCount * 0.05 + y * 0.1) * 0.03;
+                }
+                const currentLum = Math.min(Math.max(lum + waveOffset, 0), 1);
+                
+                const charIdx = Math.floor(currentLum * (ASCII_RAMP.length - 1));
+                const char = ASCII_RAMP[charIdx];
+                if (char === ' ') continue;
+
+                const r = baseColorData[idx * 3];
+                const g = baseColorData[idx * 3 + 1];
+                const b = baseColorData[idx * 3 + 2];
+
+                ctx.fillStyle = `rgb(${r},${g},${b})`;
+                ctx.fillText(char, x * CHAR_WIDTH, y * CHAR_HEIGHT);
+            }
+        }
+
+        const state = growthProgress < 1.0 ? "BUILDING..." : "FULL BLOOM";
+        statusText.innerText = `Frame: ${frameCount} | State: ${state}`;
+    }
+
+    requestAnimationFrame(animate);
+}
+
+requestAnimationFrame(animate);
+
+window.addEventListener('resize', () => {
+    if (imgLoaded) initGrid();
+});
+</script>
+
+</body>
+</html>
