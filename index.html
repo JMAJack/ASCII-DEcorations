@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tropical Bloom</title>
+    
+    <!-- Website Favicon & Apple Touch Icon for iPhone Home Screen -->
+    <link rel="icon" type="image/png" href="1200px-hibiscus_flower_tz clean cut.png">
+    <link rel="apple-touch-icon" href="1200px-hibiscus_flower_tz clean cut.png">
+    
     <style>
         body {
             margin: 0;
@@ -16,17 +21,19 @@
             justify-content: center;
             height: 100vh;
             overflow: hidden;
+            touch-action: manipulation;
         }
         #app-container {
             display: flex;
             width: 100vw;
             height: 100vh;
-            max-width: 1280px;
-            max-height: 720px;
+            max-width: 1400px;
+            max-height: 900px;
         }
         #canvas-container {
             flex: 1;
             position: relative;
+            overflow: hidden;
         }
         canvas {
             display: block;
@@ -35,7 +42,7 @@
             background: #0a0a0c;
         }
         #panel {
-            width: 400px;
+            width: 380px;
             background: #0a0a0c;
             border-left: 1px solid #3c3c46;
             padding: 20px;
@@ -43,19 +50,27 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            overflow-y: auto;
         }
         h1 { font-size: 20px; color: #ffd700; margin: 0 0 5px 0; }
-        .sub { font-size: 12px; color: #b4b4b4; margin-bottom: 15px; }
-        .divider { height: 1px; background: #3c3c46; margin-bottom: 15px; }
+        .sub { font-size: 11px; color: #b4b4b4; margin-bottom: 12px; }
+        .divider { height: 1px; background: #3c3c46; margin-bottom: 12px; }
         .notes { font-size: 11px; color: #aaaaaa; line-height: 1.4; }
         .notes b { color: #ffffff; }
-        .footer { font-size: 11px; color: #787882; }
+        .footer { font-size: 10px; color: #787882; margin-top: 10px; }
         
-        /* Mobile adjustments */
+        /* Responsive layout for iPhones / mobile screens */
         @media (max-width: 900px) {
             #app-container { flex-direction: column; }
-            #panel { width: 100%; height: 250px; border-left: none; border-top: 1px solid #3c3c46; padding: 10px; }
-            .notes { font-size: 10px; line-height: 1.2; }
+            #panel { 
+                width: 100%; 
+                height: 32vh; 
+                border-left: none; 
+                border-top: 1px solid #3c3c46; 
+                padding: 12px 16px; 
+            }
+            #canvas-container { flex: 1; width: 100%; }
+            .notes { font-size: 10px; line-height: 1.3; }
         }
     </style>
 </head>
@@ -73,10 +88,10 @@
             <div class="notes">
                 <b>Artist's Note</b><br>
                 A single line of light grows into a stem, a broad trumpet bud forms, and then, a stunning canopy of letters unfurls, outer petals first. A fleeting tropical memory made eternal — drawn only with letters, numbers and symbols.<br><br>
-                <b>Technology</b><br>
-                HTML5 Canvas · JavaScript · True-Color ASCII<br><br>
+                <b>Technology & Adaptation</b><br>
+                HTML5 Canvas · Adaptive Grid · True-Color ASCII<br><br>
                 <b>Creative Process</b><br>
-                1. Form - structural isolation of the hibiscus.<br>
+                1. Form - structural isolation of the hibiscus[cite: 2].<br>
                 2. Growth - progressive radial expansion from stem base.<br>
                 3. Shading - true-color sampling with uvula highlights.<br>
                 4. Motion - continuous organic sway at full bloom.
@@ -100,22 +115,27 @@ let img = new Image();
 let imgLoaded = false;
 let baseLum, baseColorData, gridCols, gridRows;
 
-img.src = '1200px-hibiscus_flower_tz clean cut.png'; // Make sure this image is in the same folder
+img.src = '1200px-hibiscus_flower_tz clean cut.png';[cite: 2]
 
 img.onload = () => {
     imgLoaded = true;
     initGrid();
 };
 
+img.onerror = () => {
+    statusText.innerText = "ERROR: Image failed to load!";
+    statusText.style.color = "#ff5555";
+};
+
 function initGrid() {
     const rect = canvas.parentElement.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
+    canvas.width = rect.width * window.devicePixelRatio;
+    canvas.height = rect.height * window.devicePixelRatio;
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
 
-    gridCols = Math.floor(canvas.width / CHAR_WIDTH);
-    gridRows = Math.floor(canvas.height / CHAR_HEIGHT);
+    gridCols = Math.floor(rect.width / CHAR_WIDTH);
+    gridRows = Math.floor(rect.height / CHAR_HEIGHT);
 
-    // Offscreen canvas to sample image pixels
     const offCanvas = document.createElement('canvas');
     offCanvas.width = gridCols;
     offCanvas.height = gridRows;
@@ -148,15 +168,16 @@ const growthFrames = 180;
 
 function animate() {
     frameCount++;
+    const rect = canvas.parentElement.getBoundingClientRect();
     ctx.fillStyle = "#0a0a0c";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0, 0, rect.width, rect.height);
 
     if (imgLoaded) {
         const cycleFrame = frameCount % cycleFrames;
         let growthProgress = 1.0;
         if (cycleFrame < growthFrames) {
             let t = cycleFrame / growthFrames;
-            growthProgress = t * t * (3.0 - 2.0 * t); // Ease in out
+            growthProgress = t * t * (3.0 - 2.0 * t);
         }
 
         const anchorX = Math.floor(gridCols / 2);
@@ -174,9 +195,8 @@ function animate() {
 
                 const idx = y * gridCols + x;
                 const lum = baseLum[idx];
-                if (lum < 0.02) continue; // skip transparent/black background
+                if (lum < 0.02) continue;
 
-                // Wave effect at full bloom
                 let waveOffset = 0;
                 if (growthProgress >= 1.0) {
                     waveOffset = Math.sin(frameCount * 0.05 + y * 0.1) * 0.03;
@@ -205,8 +225,13 @@ function animate() {
 
 requestAnimationFrame(animate);
 
+// Re-initialize layout dynamically if screen size or phone orientation changes
+let resizeTimer;
 window.addEventListener('resize', () => {
-    if (imgLoaded) initGrid();
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+        if (imgLoaded) initGrid();
+    }, 200);
 });
 </script>
 
