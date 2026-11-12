@@ -19,7 +19,6 @@
             color: #fff;
             font-family: 'Courier New', Courier, monospace;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
@@ -27,17 +26,16 @@
             touch-action: none;
         }
         #app-container {
-            display: flex;
             width: 100vw;
             height: 100vh;
-            max-width: 1400px;
-            max-height: 900px;
             position: relative;
         }
         #canvas-container {
-            flex: 1;
-            position: relative;
-            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
         }
         canvas {
             display: block;
@@ -85,14 +83,14 @@
         /* Milestone Message Banner */
         #milestone-banner {
             position: absolute;
-            bottom: 30px;
+            bottom: 40px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(15, 15, 20, 0.85);
             border: 1px solid #ffd700;
-            padding: 10px 25px;
+            padding: 12px 30px;
             border-radius: 20px;
-            font-size: 16px;
+            font-size: 18px;
             color: #ffd700;
             letter-spacing: 1px;
             opacity: 0;
@@ -100,39 +98,6 @@
             pointer-events: none;
             z-index: 5;
             box-shadow: 0 0 20px rgba(255, 215, 0, 0.15);
-        }
-
-        #panel {
-            width: 380px;
-            background: #0a0a0c;
-            border-left: 1px solid #3c3c46;
-            padding: 20px;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            overflow-y: auto;
-            z-index: 2;
-        }
-        h1 { font-size: 20px; color: #ffd700; margin: 0 0 5px 0; }
-        .sub { font-size: 11px; color: #b4b4b4; margin-bottom: 12px; }
-        .divider { height: 1px; background: #3c3c46; margin-bottom: 12px; }
-        .notes { font-size: 11px; color: #aaaaaa; line-height: 1.4; }
-        .notes b { color: #ffffff; }
-        .footer { font-size: 10px; color: #787882; margin-top: 10px; }
-        
-        @media (max-width: 900px) {
-            #app-container { flex-direction: column; }
-            #panel { 
-                width: 100%; 
-                height: 30vh; 
-                border-left: none; 
-                border-top: 1px solid #3c3c46; 
-                padding: 12px 16px; 
-            }
-            #canvas-container { flex: 1; width: 100%; }
-            .notes { font-size: 10px; line-height: 1.3; }
-            #milestone-banner { bottom: calc(30vh + 15px); font-size: 14px; padding: 8px 18px; }
         }
     </style>
 </head>
@@ -147,11 +112,11 @@
     <!-- Milestone Message Display -->
     <div id="milestone-banner">🌸 Happy 6 months 🌸</div>
 
-  
+    <div id="canvas-container"></div>
+</div>
 
 <script>
 const container = document.getElementById('canvas-container');
-const statusText = document.getElementById('statusText');
 const startOverlay = document.getElementById('start-overlay');
 const clickBtn = document.getElementById('click-btn');
 const milestoneBanner = document.getElementById('milestone-banner');
@@ -359,11 +324,6 @@ function animate() {
         
         pointsMesh.rotation.y += (targetRotationY - pointsMesh.rotation.y) * 0.05;
         pointsMesh.rotation.x += (targetRotationX - pointsMesh.rotation.x) * 0.05;
-    }
-
-    if (hasStarted) {
-        const state = animationProgress < 1.0 ? "BUILDING 3D..." : "FULL BLOOM";
-        statusText.innerText = `State: ${state} | Drag to Orbit`;
     }
 
     renderer.render(scene, camera);
